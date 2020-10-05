@@ -14,10 +14,14 @@ import (
 	"strings"
 )
 
-type InputRequest struct {
+type Request struct {
 	Method string `json:"method"`
 	Path []string `json:"path"`
 	User string `json:"user"`
+}
+
+type InputRequest struct {
+	Input Request `json:"input"`
 }
 
 func main(){
@@ -60,9 +64,11 @@ func main(){
 		}
 
 		result := evalPolicy(opaUrl, InputRequest{
-			Method:  c.Request.Method,
-			Path:    strings.Split(c.Request.URL.Path, "/")[1:],
-			User: user,
+			Request{
+				Method: c.Request.Method,
+				Path:   strings.Split(c.Request.URL.Path, "/")[1:],
+				User:   user,
+			},
 		})
 
 		logrus.Infof("policy result is %v", result)
@@ -87,7 +93,7 @@ type PolicyResponse struct {
 }
 
 func evalPolicy(opaUrl *url.URL, input InputRequest) bool {
-	relativeUrl, err := url.Parse("/v1/data/example/authz/allow")
+	relativeUrl, err := url.Parse("/v1/data/swisscom/example/allow")
 	if err != nil {
 		panic(err)
 	}

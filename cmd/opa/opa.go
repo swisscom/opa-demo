@@ -47,7 +47,10 @@ func main(){
 		})
 	})
 
+	// Handle /api/v1 route
 	apiGroup := r.Group( "/api/v1/")
+
+	// Create a custom middleware to handle the authorization
 	apiGroup.Use(func(c *gin.Context) {
 		// Eval policy
 		req := c.Request
@@ -63,6 +66,7 @@ func main(){
 			}
 		}
 
+		// Evaluate policy using OPA
 		result := evalPolicy(opaUrl, InputRequest{
 			Request{
 				Method: c.Request.Method,
@@ -73,16 +77,26 @@ func main(){
 
 		logrus.Infof("policy result is %v", result)
 
+
 		if result {
+			// Policy says that we're allowed to continue
 			c.Next()
 		} else {
+			// Return a 403
 			c.Status(http.StatusForbidden)
+			c.YAML(http.StatusForbidden, map[string]interface{}{
+				"status": false,
+				"error": "You do not have access to this resource",
+			})
 			c.Abort()
 		}
 	})
+
+	// Dummy endpoint that returns :name (e.g: /employees/alice returns alice
 	apiGroup.GET("/employees/:name", func(c *gin.Context) {
+		name, _ := c.Params.Get("name")
 		c.YAML(http.StatusOK, map[string]string{
-			"name": "Fake Name",
+			"name": name,
 		})
 	})
 	r.Run()
